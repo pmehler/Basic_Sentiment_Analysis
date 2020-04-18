@@ -18,6 +18,13 @@ public class SentAnalysis {
 	private static Map<String, Integer> negativeCount = new HashMap<>();
 	private static Map<String, Integer> positiveCount = new HashMap<>();
 
+	private static int num_positive_reviews = 0;
+	private static int num_negative_reviews = 0;
+
+	private static int total_num_pos_words = 0;
+	private static int total_num_neg_words = 0;
+
+
 	public static void main(String[] args) throws IOException
 	{
 		ArrayList<String> files = readFiles(TRAINFOLDER);
@@ -78,7 +85,7 @@ public class SentAnalysis {
 	 * You may modify the method header (return type, parameters) as you see fit.
 	 */
 	public static void train(ArrayList<String> files) throws FileNotFoundException
-	{
+	{		
 			Map<String, Integer> m;
 			char rating;
 			Scanner scan;
@@ -86,8 +93,10 @@ public class SentAnalysis {
 			for (String filename: files){
 					rating = filename.charAt(filename.indexOf('-') + 1);
 					if (rating=='1'){
+						num_negative_reviews++;
 						m = negativeCount;
 					} else {
+						num_positive_reviews++;
 						m = positiveCount;
 					}
 					scan = new Scanner(new File(TRAINFOLDERNAME + "/" + filename));
@@ -97,15 +106,18 @@ public class SentAnalysis {
 						s = scan.next();
 						s.toLowerCase();
 						m.put(s, m.getOrDefault(s, 0) + 1);
+
+						if (rating=='1'){
+							total_num_neg_words++;
+						} else {
+							total_num_pos_words++;
+						}
 					}
+				scan.close();
 			}
 
-			/* for (Map.Entry<String, Integer> entry : m.entrySet()) {
-					System.out.println(entry.getKey() + " = " + entry.getValue());
-			} */
-			//System.out.println(negativeCount.size());
-			//System.out.println(positiveCount.size());
-			scan.close();
+			System.out.println("num pos: " + num_positive_reviews);
+			System.out.println("num neg: " + num_negative_reviews);
 	}
 
 
@@ -119,8 +131,48 @@ public class SentAnalysis {
 	{
 		String result="";
 
-		return result;
+		double product = 1;
 
+		text = text.toLowerCase();
+
+		String [] words = text.split("[ )('\"/\\:;@,!?.-]+");
+
+		/*		
+			for(int i=0; i<words.length; i++){
+			System.out.println(words[i]);
+		}*/
+
+		double prob_positive = num_positive_reviews / (num_positive_reviews+num_negative_reviews);
+
+		for(int i=0; i<words.length; i++){
+			double prob_word_pos = positiveCount.get(words[i])/total_num_pos_words;
+			product = product * prob_word_pos;
+			//System.out.println(words[i]);
+		}
+
+		double prob_text_pos = prob_positive*product;
+
+		double prob_negative = num_negative_reviews / (num_positive_reviews+num_negative_reviews);
+
+		for(int i=0; i<words.length; i++){
+			double prob_word_neg = negativeCount.get(words[i])/total_num_neg_words;
+			product = product * prob_word_neg;
+			//System.out.println(words[i]);
+		}
+
+		double prob_text_neg = prob_negative*product;
+
+		if (prob_text_neg > prob_text_pos){
+			result = "negative";
+		}
+		else{
+			result = "positive";
+		}
+		
+		System.out.println("prob pos: " + prob_text_pos);
+		System.out.println("prob neg: " + prob_text_neg);
+
+		return result;
 	}
 
 
