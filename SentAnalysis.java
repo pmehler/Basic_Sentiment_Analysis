@@ -18,11 +18,11 @@ public class SentAnalysis {
 	private static Map<String, Integer> negativeCount = new HashMap<>();
 	private static Map<String, Integer> positiveCount = new HashMap<>();
 
-	private static int num_positive_reviews = 0;
-	private static int num_negative_reviews = 0;
+	private static double num_positive_reviews = 0;
+	private static double num_negative_reviews = 0;
 
-	private static int total_num_pos_words = 0;
-	private static int total_num_neg_words = 0;
+	private static double total_num_pos_words = 0;
+	private static double total_num_neg_words = 0;
 
 
 	public static void main(String[] args) throws IOException
@@ -131,7 +131,10 @@ public class SentAnalysis {
 	{
 		String result="";
 
-		double product = 1;
+		double smoothing_coef = 0.0001;
+
+		double pos_sum = 0;
+		double neg_sum = 0;
 
 		text = text.toLowerCase();
 
@@ -141,26 +144,50 @@ public class SentAnalysis {
 			for(int i=0; i<words.length; i++){
 			System.out.println(words[i]);
 		}*/
+		double total_num_unique_pos_words = positiveCount.size();
+		double total_num_unique_neg_words = negativeCount.size();
+
 
 		double prob_positive = num_positive_reviews / (num_positive_reviews+num_negative_reviews);
 
 		for(int i=0; i<words.length; i++){
-			double prob_word_pos = positiveCount.get(words[i])/total_num_pos_words;
-			product = product * prob_word_pos;
-			//System.out.println(words[i]);
+			double prob_word_pos = (positiveCount.getOrDefault(words[i],0)+smoothing_coef)/(total_num_unique_pos_words+(smoothing_coef*words.length));
+			pos_sum = pos_sum + (Math.log(prob_word_pos) / Math.log(2));
+
+
+			System.out.println("word: " + words[i]);
+			System.out.println("prob word pos: " + prob_word_pos);
+			
+			System.out.println("log: " + (Math.log(prob_word_pos) / Math.log(2)));
+			System.out.println("product: " + pos_sum);
+
+			System.out.println();
+
+
 		}
 
-		double prob_text_pos = prob_positive*product;
+		double prob_text_pos = prob_positive*pos_sum;
 
 		double prob_negative = num_negative_reviews / (num_positive_reviews+num_negative_reviews);
 
 		for(int i=0; i<words.length; i++){
-			double prob_word_neg = negativeCount.get(words[i])/total_num_neg_words;
-			product = product * prob_word_neg;
-			//System.out.println(words[i]);
+			double prob_word_neg = (negativeCount.getOrDefault(words[i],0)+smoothing_coef)/(total_num_unique_neg_words+(smoothing_coef*words.length));
+			neg_sum = neg_sum + (Math.log(prob_word_neg) / Math.log(2));
+
+			System.out.println("word: " + words[i]);
+			System.out.println("prob word neg: " + prob_word_neg);	
+
+			System.out.println("log: " + (Math.log(prob_word_neg) / Math.log(2)));
+			System.out.println("product: " + neg_sum);
+		
+			System.out.println();
+
 		}
 
-		double prob_text_neg = prob_negative*product;
+		double prob_text_neg = prob_negative*neg_sum;
+
+		System.out.println("prob_negative: " + prob_negative);
+		System.out.println("prob_positive: " + prob_positive);
 
 		if (prob_text_neg > prob_text_pos){
 			result = "negative";
