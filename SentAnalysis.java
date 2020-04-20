@@ -39,7 +39,12 @@ public class SentAnalysis {
 			Scanner scan = new Scanner(System.in);
 			System.out.print("Text to classify>> ");
 			String textToClassify = scan.nextLine();
-			System.out.println("Result: "+classify(textToClassify));
+			while (!textToClassify.equals("quit")){
+				System.out.print("Text to classify>> ");
+				textToClassify = scan.nextLine();
+				System.out.println("Result: "+classify(textToClassify));
+			}
+
 		}
 
 	}
@@ -85,7 +90,7 @@ public class SentAnalysis {
 	 * You may modify the method header (return type, parameters) as you see fit.
 	 */
 	public static void train(ArrayList<String> files) throws FileNotFoundException
-	{		
+	{
 			Map<String, Integer> m;
 			char rating;
 			Scanner scan;
@@ -108,6 +113,7 @@ public class SentAnalysis {
 						m.put(s, m.getOrDefault(s, 0) + 1);
 
 						if (rating=='1'){
+							//not using
 							total_num_neg_words++;
 						} else {
 							total_num_pos_words++;
@@ -131,7 +137,7 @@ public class SentAnalysis {
 	{
 		String result="";
 
-		double smoothing_coef = 0.0001;
+		double smoothing_coef = 0.0005;
 
 		double pos_sum = 0;
 		double neg_sum = 0;
@@ -140,7 +146,8 @@ public class SentAnalysis {
 
 		String [] words = text.split("[ )('\"/\\:;@,!?.-]+");
 
-		/*		
+
+		/*
 			for(int i=0; i<words.length; i++){
 			System.out.println(words[i]);
 		}*/
@@ -149,56 +156,63 @@ public class SentAnalysis {
 
 
 		double prob_positive = num_positive_reviews / (num_positive_reviews+num_negative_reviews);
-
 		for(int i=0; i<words.length; i++){
 			double prob_word_pos = (positiveCount.getOrDefault(words[i],0)+smoothing_coef)/(total_num_unique_pos_words+(smoothing_coef*words.length));
-			pos_sum = pos_sum + (Math.log(prob_word_pos) / Math.log(2));
-
+			pos_sum = pos_sum + (Math.log(prob_word_pos));
+/*
 
 			System.out.println("word: " + words[i]);
+			System.out.println("occurences count: " + positiveCount.getOrDefault(words[i],0));
+
 			System.out.println("prob word pos: " + prob_word_pos);
-			
+			System.out.println("num unique pos words" + total_num_unique_pos_words);
+			System.out.println("length of words" + words.length);
 			System.out.println("log: " + (Math.log(prob_word_pos) / Math.log(2)));
 			System.out.println("product: " + pos_sum);
 
 			System.out.println();
-
+*/
 
 		}
+		double prob_negative = num_negative_reviews / (num_positive_reviews+num_negative_reviews);
 
 		double prob_text_pos = prob_positive*pos_sum;
 
-		double prob_negative = num_negative_reviews / (num_positive_reviews+num_negative_reviews);
 
 		for(int i=0; i<words.length; i++){
 			double prob_word_neg = (negativeCount.getOrDefault(words[i],0)+smoothing_coef)/(total_num_unique_neg_words+(smoothing_coef*words.length));
-			neg_sum = neg_sum + (Math.log(prob_word_neg) / Math.log(2));
+			neg_sum = neg_sum + (Math.log(prob_word_neg));
 
+/*
 			System.out.println("word: " + words[i]);
-			System.out.println("prob word neg: " + prob_word_neg);	
+			System.out.println("occurences count: " + negativeCount.getOrDefault(words[i],0));
+			System.out.println("num unique neg words" + total_num_unique_neg_words);
+			System.out.println("prob word neg: " + prob_word_neg);
+			System.out.println("length of words" + words.length);
+
 
 			System.out.println("log: " + (Math.log(prob_word_neg) / Math.log(2)));
 			System.out.println("product: " + neg_sum);
-		
+
 			System.out.println();
-
+*/
 		}
-
 		double prob_text_neg = prob_negative*neg_sum;
 
+		/*
 		System.out.println("prob_negative: " + prob_negative);
 		System.out.println("prob_positive: " + prob_positive);
-
+		*/
 		if (prob_text_neg > prob_text_pos){
 			result = "negative";
 		}
 		else{
 			result = "positive";
 		}
-		
+		/*
 		System.out.println("prob pos: " + prob_text_pos);
 		System.out.println("prob neg: " + prob_text_neg);
-
+		*/
 		return result;
 	}
 
@@ -221,10 +235,50 @@ public class SentAnalysis {
 
 		ArrayList<String> filesToClassify = readFiles(folder);
 
+		int totalClassifiedPositive = 0;
+		int numCorrectPositive = 0;
+		int totalClassifiedNegative = 0;
+		int numCorrectNegative = 0;
+		char real_rating;
+		for (String filename: filesToClassify){
+				real_rating = filename.charAt(filename.indexOf('-') + 1);
+				scan = new Scanner(new File(foldername + "/" + filename));
+				while (scan.hasNext()){
+					String classified = classify(scan.nextLine());
+					if (classified=="negative"){
+							totalClassifiedNegative++;
+							if (real_rating=='1'){
+								numCorrectNegative++;
+							}
+					}
+					else if (classified=="positive"){
+							totalClassifiedPositive++;
+							if (real_rating=='5'){
+								numCorrectPositive++;
+							}
+					}
+				}
+			}
+
+			double totalCorrect = numCorrectPositive + numCorrectNegative;
+			double totalClassified = totalClassifiedPositive + totalClassifiedNegative;
+			System.out.println("Total classified pos, neg: " + totalClassifiedPositive + " " +totalClassifiedNegative);
+			System.out.println("num correct pos, neg: " + numCorrectPositive + " " + numCorrectNegative);
+			System.out.println("Total correct, total classified: " +totalCorrect + " " + totalClassified);
+
+			System.out.println("Accuracy: " + (totalCorrect/totalClassified) * 100);
+			System.out.println("Precision (Positive): " + ((double)numCorrectPositive/(double)totalClassifiedPositive)*100);
+			System.out.println("Precision (Negative): " + ((double)numCorrectNegative/(double)totalClassifiedNegative)*100);
+
+/*
+
+• Accuracy: number correctly classified / total classified
+
+• Precision: number correctly classified as positive / total classified as positive
+	       number correctly classified as negative / total classified as negative
+
+*/
 
 
 	}
-
-
-
 }
