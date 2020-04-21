@@ -137,7 +137,7 @@ public class SentAnalysis {
 	{
 		String result="";
 
-		double smoothing_coef = 0.0005;
+		double smoothing_coef = 0.001;
 
 		double pos_sum = 0;
 		double neg_sum = 0;
@@ -159,8 +159,8 @@ public class SentAnalysis {
 		for(int i=0; i<words.length; i++){
 			double prob_word_pos = (positiveCount.getOrDefault(words[i],0)+smoothing_coef)/(total_num_unique_pos_words+(smoothing_coef*words.length));
 			pos_sum = pos_sum + (Math.log(prob_word_pos));
-/*
 
+/*
 			System.out.println("word: " + words[i]);
 			System.out.println("occurences count: " + positiveCount.getOrDefault(words[i],0));
 
@@ -171,12 +171,12 @@ public class SentAnalysis {
 			System.out.println("product: " + pos_sum);
 
 			System.out.println();
-*/
 
+*/
 		}
 		double prob_negative = num_negative_reviews / (num_positive_reviews+num_negative_reviews);
 
-		double prob_text_pos = prob_positive*pos_sum;
+		double prob_text_pos = pos_sum + Math.log(prob_positive);
 
 
 		for(int i=0; i<words.length; i++){
@@ -197,7 +197,7 @@ public class SentAnalysis {
 			System.out.println();
 */
 		}
-		double prob_text_neg = prob_negative*neg_sum;
+		double prob_text_neg = neg_sum + Math.log(prob_negative);
 
 		/*
 		System.out.println("prob_negative: " + prob_negative);
@@ -277,6 +277,12 @@ public class SentAnalysis {
 • Precision: number correctly classified as positive / total classified as positive
 	       number correctly classified as negative / total classified as negative
 
+Total classified pos, neg: 15642 11540
+num correct pos, neg: 11718 9259
+Total correct, total classified: 20977.0 27182.0
+Accuracy: 77.17239349569567
+Precision (Positive): 74.91369390103567
+Precision (Negative): 80.23396880415945
 */
 
 
