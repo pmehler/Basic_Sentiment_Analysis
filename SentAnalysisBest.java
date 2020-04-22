@@ -237,6 +237,7 @@ public class SentAnalysisBest {
 
 
 		double prob_text_pos = pos_sum + Math.log(prob_positive);
+		prob_text_pos = prob_text_pos*0.503;
 /*
 		System.out.println("prob pos exclamations: " + prob_exclamations_pos);
 		System.out.println("prob pos caps: " + prob_caps_pos);
@@ -267,6 +268,7 @@ public class SentAnalysisBest {
 */
 		}
 		double prob_text_neg = neg_sum + Math.log(prob_negative);
+		prob_text_neg = prob_text_neg*0.497;
 		//System.out.println("negative log: " + Math.log(neg_len_prob));
 
 
