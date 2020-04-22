@@ -1,6 +1,7 @@
 /* Basic Sentiment Analysis
+ * SentAnalysis.java
  * Emma Neary and Peter Mehler
- * All group members were present and contributing during all work on this project
+ * All group members were present and contributing during all work on this project.
  * We did not give or recieve unauthorized aid on this assignment.
  */
 
@@ -15,7 +16,7 @@ public class SentAnalysis {
 
 	final static String TRAINFOLDERNAME = "train";
 
-	final static File TRAINFOLDER = new File("train");
+	final static File TRAINFOLDER = new File(TRAINFOLDERNAME);
 
 	// Hashmaps containing the counts of every word
 	private static Map<String, Integer> negativeCount = new HashMap<>();
@@ -53,7 +54,6 @@ public class SentAnalysis {
 		//List to store filenames in folder
 		ArrayList<String> filelist = new ArrayList<String>();
 
-
 		for (File fileEntry : folder.listFiles()) {
 	        String filename = fileEntry.getName();
 	        filelist.add(filename);
@@ -62,7 +62,11 @@ public class SentAnalysis {
 		return filelist;
 	}
 
-	// Fills Hashmaps with given text
+
+	/*
+	 * Takes as a parameter a list of filenames and trains Naive Bayes sentiment
+	 * analyzer on them by counting occurences of words.
+	 */
 	public static void train(ArrayList<String> files) throws FileNotFoundException
 	{
 		Map<String, Integer> m;
@@ -86,7 +90,7 @@ public class SentAnalysis {
 			//Loop through words and add to hashmap
 			while (scan.hasNext()){
 				s = scan.next();
-				s.toLowerCase();
+				s = s.toLowerCase();
 				m.put(s, m.getOrDefault(s, 0) + 1);
 			}
 		scan.close();
@@ -99,50 +103,47 @@ public class SentAnalysis {
 	 */
 	public static String classify(String text)
 	{
-		String result="";
+		double smoothing_coef = 0.07;
 
-		double smoothing_coef = 0.001;
-
+		//store sum of features probability
 		double pos_sum = 0;
 		double neg_sum = 0;
 
 		text = text.toLowerCase();
-
 		String [] words = text.split("[ )('\"/\\:;@,!?.-]+");
-
 		double total_num_unique_pos_words = positiveCount.size();
 		double total_num_unique_neg_words = negativeCount.size();
 
-		//loop through words and calculate the combined probabilities of each word being in a positive review
+		//loop through words and calculate the combined probabilities of each
+		//word being in a pos/neg review
 		for(int i=0; i<words.length; i++){
 			double prob_word_pos = (positiveCount.getOrDefault(words[i],0)+smoothing_coef)/(total_num_unique_pos_words+(smoothing_coef*words.length));
 			pos_sum = pos_sum + (Math.log(prob_word_pos));
-		}
-
-		double prob_positive = num_positive_reviews / (num_positive_reviews+num_negative_reviews);
-		double prob_text_pos = pos_sum + Math.log(prob_positive);
-
-		//proability words are in negative review
-		for(int i=0; i<words.length; i++){
 			double prob_word_neg = (negativeCount.getOrDefault(words[i],0)+smoothing_coef)/(total_num_unique_neg_words+(smoothing_coef*words.length));
 			neg_sum = neg_sum + (Math.log(prob_word_neg));
 		}
 
+		//calculate final probabilities
+		double prob_positive = num_positive_reviews / (num_positive_reviews+num_negative_reviews);
 		double prob_negative = num_negative_reviews / (num_positive_reviews+num_negative_reviews);
+
+		double prob_text_pos = pos_sum + Math.log(prob_positive);
 		double prob_text_neg = neg_sum + Math.log(prob_negative);
 
 		//maximum likelihood
 		if (prob_text_neg > prob_text_pos){
-			result = "negative";
+			return "negative";
 		}
 		else{
-			result = "positive";
+			return "positive";
 		}
-
-		return result;
 	}
 
 
+	/*
+	* Runs sentiment analyzer on test files and prints
+	* accuracy and precision of results
+	*/
 	public static void evaluate() throws FileNotFoundException
 	{
 		@SuppressWarnings("resource")
@@ -154,10 +155,10 @@ public class SentAnalysis {
 
 		ArrayList<String> filesToClassify = readFiles(folder);
 
-		int totalClassifiedPositive = 0;
-		int numCorrectPositive = 0;
-		int totalClassifiedNegative = 0;
-		int numCorrectNegative = 0;
+		int totalClassifiedPositive = 0; //number of reviews classified positive
+		int numCorrectPositive = 0; //number of positive reviews classified positive
+		int totalClassifiedNegative = 0; //number of reviews classified negative
+		int numCorrectNegative = 0; //number of negative reviews classified negative
 		char real_rating;
 
 		//Loop through files and evaluate classification of extracted text
@@ -180,10 +181,18 @@ public class SentAnalysis {
 					}
 				}
 			}
+			//total number of reviews classified correctly
 			double totalCorrect = numCorrectPositive + numCorrectNegative;
+			//total number of reviews classified
 			double totalClassified = totalClassifiedPositive + totalClassifiedNegative;
-			System.out.println("Accuracy: " + (totalCorrect/totalClassified) * 100);
-			System.out.println("Precision (Positive): " + ((double)numCorrectPositive/(double)totalClassifiedPositive)*100);
-			System.out.println("Precision (Negative): " + ((double)numCorrectNegative/(double)totalClassifiedNegative)*100);
+
+			double posPrecision = ((double)numCorrectPositive/(double)totalClassifiedPositive)*100;
+			double negPrecision = ((double)numCorrectNegative/(double)totalClassifiedNegative)*100;
+			double accuracy = (double)totalCorrect/totalClassified * 100;
+
+			//format and print as percentages
+			System.out.println("Accuracy: " + Math.floor(accuracy * 100)/100 + "%");
+			System.out.println("Precision (Positive): " + Math.floor(posPrecision*100)/100 + "%");
+			System.out.println("Precision (Negative): " + Math.floor(negPrecision*100)/100 + "%");
 	}
 }
