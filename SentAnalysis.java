@@ -1,5 +1,7 @@
-/*
- * Please see submission instructions for what to write here.
+/* Basic Sentiment Analysis
+ * Emma Neary and Peter Mehler
+ * All group members were present and contributing during all work on this project
+ * We did not give or recieve unauthorized aid on this assignment.
  */
 
 import java.io.*;
@@ -15,15 +17,12 @@ public class SentAnalysis {
 
 	final static File TRAINFOLDER = new File("train");
 
+	// Hashmaps containing the counts of every word
 	private static Map<String, Integer> negativeCount = new HashMap<>();
 	private static Map<String, Integer> positiveCount = new HashMap<>();
 
 	private static double num_positive_reviews = 0;
 	private static double num_negative_reviews = 0;
-
-	private static double total_num_pos_words = 0;
-	private static double total_num_neg_words = 0;
-
 
 	public static void main(String[] args) throws IOException
 	{
@@ -35,16 +34,10 @@ public class SentAnalysis {
 			evaluate();
 		}
 		else{//otherwise, runs interactive mode
-			@SuppressWarnings("resource")
-			Scanner scan = new Scanner(System.in);
+			@SuppressWarnings("resource")Scanner scan = new Scanner(System.in);
 			System.out.print("Text to classify>> ");
 			String textToClassify = scan.nextLine();
-			while (!textToClassify.equals("quit")){
-				System.out.print("Text to classify>> ");
-				textToClassify = scan.nextLine();
-				System.out.println("Result: "+classify(textToClassify));
-			}
-
+			System.out.println("Result: "+classify(textToClassify));
 		}
 
 	}
@@ -69,36 +62,32 @@ public class SentAnalysis {
 		return filelist;
 	}
 
-
+	// Fills Hashmaps with given text
 	public static void train(ArrayList<String> files) throws FileNotFoundException
 	{
 		Map<String, Integer> m;
 		char rating;
 		Scanner scan;
 
+		//loop through filenames
 		for (String filename: files){
 			rating = filename.charAt(filename.indexOf('-') + 1);
-			if (rating=='1'){
+			if (rating=='1'){	//negative rating
 				num_negative_reviews++;
 				m = negativeCount;
-			} else {
+			} else {	//positive rating
 				num_positive_reviews++;
 				m = positiveCount;
 			}
 			scan = new Scanner(new File(TRAINFOLDERNAME + "/" + filename));
+			// extract words without punctuation
 			scan.useDelimiter(("[ )('\"/\\:;@,!?.-]+"));
 			String s;
+			//Loop through words and add to hashmap
 			while (scan.hasNext()){
 				s = scan.next();
 				s.toLowerCase();
 				m.put(s, m.getOrDefault(s, 0) + 1);
-
-				if (rating=='1'){
-					//not using
-					total_num_neg_words++;
-				} else {
-					total_num_pos_words++;
-				}
 			}
 		scan.close();
 		}
@@ -124,23 +113,25 @@ public class SentAnalysis {
 		double total_num_unique_pos_words = positiveCount.size();
 		double total_num_unique_neg_words = negativeCount.size();
 
-		double prob_positive = num_positive_reviews / (num_positive_reviews+num_negative_reviews);
+		//loop through words and calculate the combined probabilities of each word being in a positive review
 		for(int i=0; i<words.length; i++){
 			double prob_word_pos = (positiveCount.getOrDefault(words[i],0)+smoothing_coef)/(total_num_unique_pos_words+(smoothing_coef*words.length));
 			pos_sum = pos_sum + (Math.log(prob_word_pos));
 		}
 
-		double prob_negative = num_negative_reviews / (num_positive_reviews+num_negative_reviews);
-
+		double prob_positive = num_positive_reviews / (num_positive_reviews+num_negative_reviews);
 		double prob_text_pos = pos_sum + Math.log(prob_positive);
 
+		//proability words are in negative review
 		for(int i=0; i<words.length; i++){
 			double prob_word_neg = (negativeCount.getOrDefault(words[i],0)+smoothing_coef)/(total_num_unique_neg_words+(smoothing_coef*words.length));
 			neg_sum = neg_sum + (Math.log(prob_word_neg));
 		}
 
+		double prob_negative = num_negative_reviews / (num_positive_reviews+num_negative_reviews);
 		double prob_text_neg = neg_sum + Math.log(prob_negative);
 
+		//maximum likelihood
 		if (prob_text_neg > prob_text_pos){
 			result = "negative";
 		}
@@ -168,32 +159,29 @@ public class SentAnalysis {
 		int totalClassifiedNegative = 0;
 		int numCorrectNegative = 0;
 		char real_rating;
+
+		//Loop through files and evaluate classification of extracted text
 		for (String filename: filesToClassify){
 				real_rating = filename.charAt(filename.indexOf('-') + 1);
 				scan = new Scanner(new File(foldername + "/" + filename));
 				while (scan.hasNext()){
 					String classified = classify(scan.nextLine());
 					if (classified=="negative"){
-							totalClassifiedNegative++;
-							if (real_rating=='1'){
-								numCorrectNegative++;
-							}
+						totalClassifiedNegative++;
+						if (real_rating=='1'){//correct!
+							numCorrectNegative++;
+						}
 					}
 					else if (classified=="positive"){
-							totalClassifiedPositive++;
-							if (real_rating=='5'){
-								numCorrectPositive++;
-							}
+						totalClassifiedPositive++;
+						if (real_rating=='5'){//correct!
+							numCorrectPositive++;
+						}
 					}
 				}
 			}
-
 			double totalCorrect = numCorrectPositive + numCorrectNegative;
 			double totalClassified = totalClassifiedPositive + totalClassifiedNegative;
-			System.out.println("Total classified pos, neg: " + totalClassifiedPositive + " " +totalClassifiedNegative);
-			System.out.println("num correct pos, neg: " + numCorrectPositive + " " + numCorrectNegative);
-			System.out.println("Total correct, total classified: " +totalCorrect + " " + totalClassified);
-
 			System.out.println("Accuracy: " + (totalCorrect/totalClassified) * 100);
 			System.out.println("Precision (Positive): " + ((double)numCorrectPositive/(double)totalClassifiedPositive)*100);
 			System.out.println("Precision (Negative): " + ((double)numCorrectNegative/(double)totalClassifiedNegative)*100);
